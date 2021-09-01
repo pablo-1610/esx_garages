@@ -2,6 +2,7 @@ ESX = nil
 
 TriggerEvent(Config.esxGetter, function(obj)
     ESX = obj
+    MySQL.Async.execute("UPDATE owned_vehicles SET stored = 1", {})
 end)
 
 RegisterNetEvent("garage:openMenu")

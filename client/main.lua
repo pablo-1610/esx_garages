@@ -171,6 +171,7 @@ AddEventHandler("garage:openMenu", function(garageId, ownedVehicles)
                                 PointCamAtCoord(cam, v.coords)
                                 lastPosActive = k
                             end
+                            DrawMarker(22, v.coords, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 255, 255, 255, 100, false, true, 2, true, false, false, false)
                         end
 
                         if s then
@@ -199,6 +200,7 @@ AddEventHandler("garage:openMenu", function(garageId, ownedVehicles)
                                 PointCamAtCoord(cam, v.coords)
                                 lastPosActive = k
                             end
+                            DrawMarker(22, v.coords, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 255, 255, 255, 100, false, true, 2, true, false, false, false)
                         end
 
                         if s then
