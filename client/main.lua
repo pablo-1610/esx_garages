@@ -42,6 +42,10 @@ local function createMenuPanes()
     RMenu:Get(cat, sub("main")).Closed = function()
     end
 
+    RMenu.Add(cat, sub("fourriere"), RageUI.CreateMenu("Fourrière", "~g~Sortez vos véhicules", nil, nil, "pablo", "black"))
+    RMenu:Get(cat, sub("fourriere")).Closed = function()
+    end
+
     RMenu.Add(cat, sub("cam_selector_in"), RageUI.CreateSubMenu(RMenu:Get(cat, sub("main")), title, desc, nil, nil, "pablo", "black"))
     RMenu:Get(cat, sub("cam_selector_in")).Closed = function()
         RenderScriptCams(0,0,0,0,0)
@@ -76,19 +80,49 @@ Citizen.CreateThread(function()
         EndTextCommandSetBlipName(blip)
     end
 
+    for _, data in pairs(Config.fourrieres.list) do
+        local blip = AddBlipForCoord(data.coords)
+        SetBlipAsShortRange(blip, true)
+        SetBlipScale(blip, 1.0)
+        SetBlipSprite(blip, 237)
+        SetBlipColour(blip, 81)
+
+        BeginTextCommandSetBlipName("STRING")
+        AddTextComponentString(Config.fourrieres.name)
+        EndTextCommandSetBlipName(blip)
+    end
+
     while true do
         local interval, pos = 250, GetEntityCoords(PlayerPedId())
-        for id, data in pairs(Config.garages) do
-            local itrPos = data.interactionZone
-            local dst = #(pos-itrPos)
-            if (dst <= 40.0) then
-                interval = 0
-                DrawMarker(22, itrPos, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.45, 0.45, 0.45, 150, 220, 255, 255, 55555, false, true, 2, false, false, false, false)
-                if dst <= 1.0 then
-                    ESX.ShowHelpNotification("Appuyez sur ~INPUT_CONTEXT~ pour ouvrir le garage")
-                    if IsControlJustPressed(0, 51) then
-                        TriggerServerEvent("garage:openMenu", id)
-                        canInteractWithZone = false
+        if canInteractWithZone then
+            for id, data in pairs(Config.garages) do
+                local itrPos = data.interactionZone
+                local dst = #(pos-itrPos)
+                if (dst <= 40.0) then
+                    interval = 0
+                    DrawMarker(22, itrPos, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.45, 0.45, 0.45, 150, 220, 255, 255, 55555, false, true, 2, false, false, false, false)
+                    if dst <= 1.0 then
+                        ESX.ShowHelpNotification("Appuyez sur ~INPUT_CONTEXT~ pour ouvrir le garage")
+                        if IsControlJustPressed(0, 51) then
+                            TriggerServerEvent("garage:openMenu", id)
+                            canInteractWithZone = false
+                        end
+                    end
+                end
+            end
+            -----
+            for id, data in pairs(Config.fourrieres.list) do
+                local itrPos = data.coords
+                local dst = #(pos-itrPos)
+                if (dst <= 40.0) then
+                    interval = 0
+                    DrawMarker(22, itrPos, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.45, 0.45, 0.45, 252, 152, 3, 255, 55555, false, true, 2, false, false, false, false)
+                    if dst <= 1.0 then
+                        ESX.ShowHelpNotification("Appuyez sur ~INPUT_CONTEXT~ pour ouvrir la fourrière")
+                        if IsControlJustPressed(0, 51) then
+                            TriggerServerEvent("garage:openFourriere", id)
+                            canInteractWithZone = false
+                        end
                     end
                 end
             end
@@ -108,6 +142,48 @@ end
 local function validatePlace(coords, radius)
     return ESX.Game.IsSpawnPointClear(coords, radius)
 end
+
+RegisterNetEvent("garage:openFourriere")
+AddEventHandler("garage:openFourriere", function(fourriereId, fourriereVehs)
+    if isMenuActive then return end
+    FreezeEntityPosition(PlayerPedId(), true)
+    canInteractWithZone = true
+    isMenuActive = true
+    RageUI.Visible(RMenu:Get(cat, sub("fourriere")), true)
+    Citizen.CreateThread(function()
+        local selectedPlace, selectedVehicle, lastPosActive = 1, nil, 1
+        cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", 0)
+        SetCamActive(cam, true)
+        while isMenuActive do
+            local shouldStayOpened = false
+            local function tick()
+                shouldStayOpened = true
+            end
+
+            RageUI.IsVisible(RMenu:Get(cat, sub("fourriere")), true, true, true, function()
+                tick()
+                RageUI.Separator("Prix de la sortie: ~g~"..Config.fourrieres.price.."$")
+                for id, data in pairs(fourriereVehs) do
+                    local model = data.vehicle.model
+                    RageUI.ButtonWithStyle((data.customname ~= nil and data.customname or firstToUpper(GetDisplayNameFromVehicleModel(model):lower())..(" (~b~%s~s~)"):format(data.plate)), "Appuyez pour selectionner ce véhicule", {RightLabel = "Sortir →→"}, true, function(_,_,s)
+                        if s then
+                            shouldStayOpened = false
+                            canInteractWithZone = false
+                            TriggerServerEvent("garage:spawnFourriere", fourriereId, fourriereVehs[id])
+                        end
+                    end)
+                end
+            end, function()
+            end)
+
+            if not shouldStayOpened and isMenuActive then
+                FreezeEntityPosition(PlayerPedId(), false)
+                isMenuActive = false
+            end
+            Wait(0)
+        end
+    end)
+end)
 
 RegisterNetEvent("garage:openMenu")
 AddEventHandler("garage:openMenu", function(garageId, ownedVehicles)

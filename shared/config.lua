@@ -20,7 +20,7 @@ Config = {
         name = "Fourrière",
 
         list = {
-            { interaction = vector3(3, 3, 3), out = { pos = vector3(0, 0, 0), heading = 90.0 } }
+            { coords = vector3(410.21, -1623.69, 29.29), out = { pos = vector3(404.09, -1643.0, 29.29), heading = 228.61 } }
         }
     }
 }
